@@ -90,6 +90,73 @@ async function bootstrap() {
       }
     });
 
+    // Google OAuth route
+    server.post('/api/auth/google', {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['email', 'name', 'googleId'],
+          properties: {
+            email: { type: 'string', format: 'email' },
+            name: { type: 'string' },
+            googleId: { type: 'string' },
+          },
+        },
+      },
+    }, async (request, reply) => {
+      try {
+        const { email, name, googleId } = request.body as { 
+          email: string; 
+          name: string; 
+          googleId: string; 
+        };
+
+        // Check if user already exists
+        let user = await userRepository.findByEmail(email);
+        
+        if (!user) {
+          // Create new user from Google OAuth
+          const [firstName, ...lastNameParts] = name.split(' ');
+          const lastName = lastNameParts.join(' ') || '';
+          
+          const registerUseCase = new RegisterUseCase(userRepository);
+          const result = await registerUseCase.execute({
+            email,
+            password: Math.random().toString(36).slice(-8), // Random password for OAuth users
+            firstName,
+            lastName,
+          });
+          
+          user = result.user;
+        }
+
+        // Generate JWT token
+        const token = server.jwt.sign({
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        });
+
+        reply.code(200).send({
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+            isActive: user.isActive,
+            emailVerified: true, // Google accounts are considered verified
+          },
+          token,
+        });
+      } catch (error) {
+        console.error('Google OAuth error:', error);
+        reply.code(500).send({ error: 'Error en autenticación con Google' });
+      }
+    });
+
     // Auth routes
     server.post('/api/auth/register', {
       schema: {

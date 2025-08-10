@@ -9,6 +9,8 @@ import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 
 const registerSchema = z.object({
   firstName: z.string().min(1, 'El nombre es requerido'),
@@ -55,6 +57,17 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
+        {/* Back Button */}
+        <div className="flex justify-start">
+          <Link
+            href="/"
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeftIcon className="h-4 w-4 mr-2" />
+            Volver al inicio
+          </Link>
+        </div>
+
         <div>
           <div className="mx-auto h-12 w-12 bg-primary-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-xl">E</span>
@@ -197,6 +210,25 @@ export default function RegisterPage() {
             </button>
           </div>
         </form>
+
+        {/* Google Sign In */}
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-gray-50 text-gray-500">O continúa con</span>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <GoogleSignInButton 
+              text="Registrarse con Google"
+              onSuccess={() => router.push('/')}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
