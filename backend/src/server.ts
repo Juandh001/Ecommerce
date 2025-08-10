@@ -281,6 +281,21 @@ async function bootstrap() {
       }
     });
 
+    server.get('/api/products/by-slug/:slug', async (request, reply) => {
+      try {
+        const { slug } = request.params as { slug: string };
+        const product = await productRepository.findWithDetailsBySlug(slug);
+        
+        if (!product) {
+          return reply.code(404).send({ error: 'Product not found' });
+        }
+
+        reply.send({ product });
+      } catch (error: any) {
+        reply.code(500).send({ error: error.message });
+      }
+    });
+
     server.get('/api/products/:id', async (request, reply) => {
       try {
         const { id } = request.params as { id: string };

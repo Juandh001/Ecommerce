@@ -78,6 +78,11 @@ export const productsApi = {
     return response.data;
   },
 
+  getProductBySlug: async (slug: string): Promise<{ product: ProductWithDetails }> => {
+    const response = await api.get(`/products/by-slug/${slug}`);
+    return response.data;
+  },
+
   searchProducts: async (query: string, filters: Omit<ProductFilters, 'search'> = {}): Promise<ProductsResponse> => {
     const response = await api.get('/products', { 
       params: { ...filters, search: query } 
