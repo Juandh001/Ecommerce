@@ -48,6 +48,25 @@ export class ProductRepositoryImpl implements ProductRepository {
     return product ? this.mapToEntityWithDetails(product) : null;
   }
 
+  async findWithDetailsBySlug(slug: string): Promise<ProductWithDetails | null> {
+    const product = await this.prisma.product.findUnique({
+      where: { slug },
+      include: {
+        category: true,
+        images: {
+          orderBy: { sortOrder: 'asc' },
+        },
+        inventory: true,
+        reviews: {
+          where: { isVisible: true },
+          select: { rating: true },
+        },
+      },
+    });
+
+    return product ? this.mapToEntityWithDetails(product) : null;
+  }
+
   async create(data: CreateProductData): Promise<Product> {
     const product = await this.prisma.product.create({
       data: {

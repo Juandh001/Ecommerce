@@ -5,6 +5,7 @@ export interface ProductRepository {
   findBySlug(slug: string): Promise<Product | null>;
   findBySku(sku: string): Promise<Product | null>;
   findWithDetails(id: string): Promise<ProductWithDetails | null>;
+  findWithDetailsBySlug(slug: string): Promise<ProductWithDetails | null>;
   create(data: CreateProductData): Promise<Product>;
   update(id: string, data: UpdateProductData): Promise<Product>;
   delete(id: string): Promise<void>;
