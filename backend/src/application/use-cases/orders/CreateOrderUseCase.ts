@@ -48,9 +48,7 @@ export class CreateOrderUseCase {
       }
 
       if (productDetails.inventory?.trackQuantity) {
-        const availableQuantity = 
-          (productDetails.inventory.quantity || 0) - 
-          (productDetails.inventory.reservedQuantity || 0);
+        const availableQuantity = productDetails.inventory.quantity || 0;
         
         if (availableQuantity < item.quantity && !productDetails.inventory.allowBackorder) {
           throw new Error(`Insufficient stock for ${productDetails.name}. Only ${availableQuantity} available`);

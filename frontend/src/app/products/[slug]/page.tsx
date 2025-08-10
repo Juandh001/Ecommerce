@@ -6,8 +6,8 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProductWithDetails } from '@/types';
 import Image from 'next/image';
-import { cartApi, productsApi } from '@/lib/api';
-import toast from 'react-hot-toast';
+import { productsApi } from '@/lib/api';
+import { useCartStore } from '@/store/cartStore';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -18,7 +18,7 @@ export default function ProductDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [addingToCart, setAddingToCart] = useState(false);
+  const { addToCart, openCart, isLoading } = useCartStore();
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -43,13 +43,11 @@ export default function ProductDetailPage() {
     if (!product) return;
     
     try {
-      setAddingToCart(true);
-      await cartApi.addToCart(product.id, quantity);
-      toast.success('Producto agregado al carrito');
+      await addToCart(product.id, quantity);
+      openCart(); // Open cart sidebar to show the added product
     } catch (error) {
-      toast.error('Error al agregar al carrito');
-    } finally {
-      setAddingToCart(false);
+      // Error is already handled in the store
+      console.error('Failed to add to cart:', error);
     }
   };
 
@@ -276,10 +274,10 @@ export default function ProductDetailPage() {
 
                 <button
                   onClick={handleAddToCart}
-                  disabled={!isInStock || addingToCart}
+                  disabled={!isInStock || isLoading}
                   className="w-full btn-primary disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
-                  {addingToCart ? 'Agregando...' : isInStock ? 'Agregar al carrito' : 'Agotado'}
+                  {isLoading ? 'Agregando...' : isInStock ? 'Agregar al carrito' : 'Agotado'}
                 </button>
               </div>
 

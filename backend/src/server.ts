@@ -8,10 +8,12 @@ import sensible from '@fastify/sensible';
 import { prisma } from './infrastructure/database/prisma';
 import { UserRepositoryImpl } from './infrastructure/repositories/UserRepositoryImpl';
 import { ProductRepositoryImpl } from './infrastructure/repositories/ProductRepositoryImpl';
+import { CartRepositoryImpl } from './infrastructure/repositories/CartRepositoryImpl';
 
 import { RegisterUseCase } from './application/use-cases/auth/RegisterUseCase';
 import { LoginUseCase } from './application/use-cases/auth/LoginUseCase';
 import { GetProductsUseCase } from './application/use-cases/products/GetProductsUseCase';
+import { AddToCartUseCase } from './application/use-cases/cart/AddToCartUseCase';
 
 const server = Fastify({
   logger: {
@@ -64,10 +66,12 @@ async function bootstrap() {
 
     const userRepository = new UserRepositoryImpl(prisma);
     const productRepository = new ProductRepositoryImpl(prisma);
+    const cartRepository = new CartRepositoryImpl(prisma);
 
     const registerUseCase = new RegisterUseCase(userRepository);
     const loginUseCase = new LoginUseCase(userRepository);
     const getProductsUseCase = new GetProductsUseCase(productRepository);
+    const addToCartUseCase = new AddToCartUseCase(cartRepository, productRepository);
 
     // Check if decorator already exists to avoid hot reload issues
     if (!server.hasRequestDecorator('user')) {
@@ -123,7 +127,7 @@ async function bootstrap() {
       try {
         const result = await registerUseCase.execute(request.body as any);
         const token = server.jwt.sign({ 
-          userId: result.user.id, 
+          id: result.user.id, 
           email: result.user.email, 
           role: result.user.role 
         });
@@ -170,7 +174,7 @@ async function bootstrap() {
       try {
         const result = await loginUseCase.execute(request.body as any);
         const token = server.jwt.sign({ 
-          userId: result.user.id, 
+          id: result.user.id, 
           email: result.user.email, 
           role: result.user.role 
         });
@@ -306,6 +310,98 @@ async function bootstrap() {
         }
 
         reply.send({ product });
+      } catch (error: any) {
+        reply.code(500).send({ error: error.message });
+      }
+    });
+
+    // Cart routes
+    server.get('/api/cart', async (request, reply) => {
+      try {
+        const user = request.user as { id: string };
+        if (!user || !user.id) {
+          return reply.code(401).send({ error: 'Authentication required' });
+        }
+
+        const cart = await cartRepository.findByUserId(user.id);
+        
+        if (!cart) {
+          const newCart = await cartRepository.create(user.id);
+          return reply.send({ cart: { ...newCart, items: [], totalItems: 0, subtotal: 0 } });
+        }
+
+        reply.send({ cart });
+      } catch (error: any) {
+        reply.code(500).send({ error: error.message });
+      }
+    });
+
+    server.post('/api/cart/items', async (request, reply) => {
+      try {
+        const user = request.user as { id: string };
+        if (!user || !user.id) {
+          return reply.code(401).send({ error: 'Authentication required' });
+        }
+
+        const { productId, quantity } = request.body as { productId: string; quantity: number };
+
+        const cart = await addToCartUseCase.execute({
+          userId: user.id,
+          productId,
+          quantity,
+        });
+
+        reply.send(cart);
+      } catch (error: any) {
+        reply.code(500).send({ error: error.message });
+      }
+    });
+
+    server.put('/api/cart/items/:productId', async (request, reply) => {
+      try {
+        const user = request.user as { id: string };
+        if (!user || !user.id) {
+          return reply.code(401).send({ error: 'Authentication required' });
+        }
+
+        const { productId } = request.params as { productId: string };
+        const { quantity } = request.body as { quantity: number };
+
+        const cart = await cartRepository.updateItem(user.id, productId, { quantity });
+
+        reply.send({ cart });
+      } catch (error: any) {
+        reply.code(500).send({ error: error.message });
+      }
+    });
+
+    server.delete('/api/cart/items/:productId', async (request, reply) => {
+      try {
+        const user = request.user as { id: string };
+        if (!user || !user.id) {
+          return reply.code(401).send({ error: 'Authentication required' });
+        }
+
+        const { productId } = request.params as { productId: string };
+
+        const cart = await cartRepository.removeItem(user.id, productId);
+
+        reply.send({ cart });
+      } catch (error: any) {
+        reply.code(500).send({ error: error.message });
+      }
+    });
+
+    server.delete('/api/cart', async (request, reply) => {
+      try {
+        const user = request.user as { id: string };
+        if (!user || !user.id) {
+          return reply.code(401).send({ error: 'Authentication required' });
+        }
+
+        await cartRepository.clear(user.id);
+
+        reply.send({ success: true });
       } catch (error: any) {
         reply.code(500).send({ error: error.message });
       }

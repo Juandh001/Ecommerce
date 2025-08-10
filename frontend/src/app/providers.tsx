@@ -5,6 +5,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
+import { useCartStore } from '@/store/cartStore';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -26,10 +27,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   const initialize = useAuthStore((state) => state.initialize);
+  const { isAuthenticated } = useAuthStore();
+  const fetchCart = useCartStore((state) => state.fetchCart);
 
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchCart();
+    }
+  }, [isAuthenticated, fetchCart]);
 
   return (
     <QueryClientProvider client={queryClient}>
