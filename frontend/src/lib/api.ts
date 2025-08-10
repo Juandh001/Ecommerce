@@ -32,15 +32,25 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      Cookies.remove('auth-token');
-      if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login';
-      }
-    }
-    
     const message = error.response?.data?.error || 'An error occurred';
-    toast.error(message);
+    
+    // Handle authentication errors appropriately
+    if (error.response?.status === 401) {
+      // Only redirect to login on specific auth failures, not all 401s
+      if (error.response?.data?.error === 'Authentication required' ||
+          error.response?.data?.error === 'Invalid token' ||
+          error.config?.url?.includes('/auth/')) {
+        Cookies.remove('auth-token');
+        if (typeof window !== 'undefined') {
+          const { useAuthStore } = require('@/store/authStore');
+          useAuthStore.getState().logout();
+          window.location.href = '/auth/login';
+        }
+      }
+      // Don't show toast for 401 to avoid spam
+    } else {
+      toast.error(message);
+    }
     
     return Promise.reject(error);
   }

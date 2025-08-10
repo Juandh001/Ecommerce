@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Cart, CartItem } from '@/types';
+import { cartApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface CartState {
   cart: Cart | null;
@@ -10,10 +12,12 @@ interface CartState {
 
 interface CartActions {
   setCart: (cart: Cart | null) => void;
-  addItem: (item: CartItem) => void;
-  updateItem: (productId: string, quantity: number) => void;
-  removeItem: (productId: string) => void;
-  clearCart: () => void;
+  fetchCart: () => Promise<void>;
+  addToCart: (productId: string, quantity: number) => Promise<void>;
+  updateItem: (productId: string, quantity: number) => Promise<void>;
+  removeItem: (productId: string) => Promise<void>;
+  clearCart: () => Promise<void>;
+  addItem: (item: CartItem) => void; // Keep local function for legacy support
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
@@ -33,6 +37,39 @@ export const useCartStore = create<CartStore>()(
 
       setCart: (cart: Cart | null) => {
         set({ cart });
+      },
+
+      fetchCart: async () => {
+        try {
+          set({ isLoading: true });
+          const response = await cartApi.getCart();
+          set({ cart: response.cart });
+        } catch (error) {
+          console.error('Error fetching cart:', error);
+          // Don't show toast for 401 errors to avoid spam
+          if (error.response?.status !== 401) {
+            toast.error('Error al cargar el carrito');
+          }
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      addToCart: async (productId: string, quantity: number) => {
+        try {
+          set({ isLoading: true });
+          const response = await cartApi.addToCart(productId, quantity);
+          set({ cart: response.cart });
+          toast.success('Producto agregado al carrito');
+        } catch (error) {
+          console.error('Error adding to cart:', error);
+          if (error.response?.status !== 401) {
+            toast.error('Error al agregar al carrito');
+          }
+          throw error; // Re-throw to let UI handle the error
+        } finally {
+          set({ isLoading: false });
+        }
       },
 
       addItem: (item: CartItem) => {
@@ -71,66 +108,62 @@ export const useCartStore = create<CartStore>()(
         });
       },
 
-      updateItem: (productId: string, quantity: number) => {
-        const { cart } = get();
-        if (!cart) return;
-
-        const updatedItems = cart.items.map((item) =>
-          item.productId === productId ? { ...item, quantity } : item
-        );
-
-        const totalItems = updatedItems.reduce((sum, i) => sum + i.quantity, 0);
-        const subtotal = updatedItems.reduce(
-          (sum, i) => sum + i.product.price * i.quantity,
-          0
-        );
-
-        set({
-          cart: {
-            ...cart,
-            items: updatedItems,
-            totalItems,
-            subtotal,
-          },
-        });
+      updateItem: async (productId: string, quantity: number) => {
+        try {
+          set({ isLoading: true });
+          const response = await cartApi.updateCartItem(productId, quantity);
+          set({ cart: response.cart });
+          toast.success('Cantidad actualizada');
+        } catch (error) {
+          console.error('Error updating cart item:', error);
+          if (error.response?.status !== 401) {
+            toast.error('Error al actualizar el carrito');
+          }
+        } finally {
+          set({ isLoading: false });
+        }
       },
 
-      removeItem: (productId: string) => {
-        const { cart } = get();
-        if (!cart) return;
-
-        const updatedItems = cart.items.filter(
-          (item) => item.productId !== productId
-        );
-
-        const totalItems = updatedItems.reduce((sum, i) => sum + i.quantity, 0);
-        const subtotal = updatedItems.reduce(
-          (sum, i) => sum + i.product.price * i.quantity,
-          0
-        );
-
-        set({
-          cart: {
-            ...cart,
-            items: updatedItems,
-            totalItems,
-            subtotal,
-          },
-        });
+      removeItem: async (productId: string) => {
+        try {
+          set({ isLoading: true });
+          const response = await cartApi.removeFromCart(productId);
+          set({ cart: response.cart });
+          toast.success('Producto eliminado del carrito');
+        } catch (error) {
+          console.error('Error removing from cart:', error);
+          if (error.response?.status !== 401) {
+            toast.error('Error al eliminar del carrito');
+          }
+        } finally {
+          set({ isLoading: false });
+        }
       },
 
-      clearCart: () => {
-        const { cart } = get();
-        if (!cart) return;
-
-        set({
-          cart: {
-            ...cart,
-            items: [],
-            totalItems: 0,
-            subtotal: 0,
-          },
-        });
+      clearCart: async () => {
+        try {
+          set({ isLoading: true });
+          await cartApi.clearCart();
+          set({ 
+            cart: {
+              id: '',
+              userId: '',
+              createdAt: '',
+              updatedAt: '',
+              items: [],
+              totalItems: 0,
+              subtotal: 0,
+            }
+          });
+          toast.success('Carrito vaciado');
+        } catch (error) {
+          console.error('Error clearing cart:', error);
+          if (error.response?.status !== 401) {
+            toast.error('Error al vaciar el carrito');
+          }
+        } finally {
+          set({ isLoading: false });
+        }
       },
 
       openCart: () => {

@@ -29,7 +29,12 @@ export const useAuthStore = create<AuthStore>()(
       isLoading: true,
 
       login: (user: User, token: string) => {
-        Cookies.set('auth-token', token, { expires: 7, secure: true, sameSite: 'strict' });
+        const isProduction = process.env.NODE_ENV === 'production';
+        Cookies.set('auth-token', token, { 
+          expires: 7, 
+          secure: isProduction, 
+          sameSite: 'strict' 
+        });
         set({
           user,
           token,

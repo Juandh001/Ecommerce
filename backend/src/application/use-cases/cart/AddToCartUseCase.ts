@@ -37,9 +37,7 @@ export class AddToCartUseCase {
     const productWithInventory = await this.productRepository.findWithDetails(productId);
     
     if (productWithInventory?.inventory?.trackQuantity) {
-      const availableQuantity = 
-        (productWithInventory.inventory.quantity || 0) - 
-        (productWithInventory.inventory.reservedQuantity || 0);
+      const availableQuantity = productWithInventory.inventory.quantity || 0;
       
       if (availableQuantity < quantity && !productWithInventory.inventory.allowBackorder) {
         throw new Error(`Only ${availableQuantity} items available in stock`);
