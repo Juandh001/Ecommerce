@@ -41,6 +41,15 @@ export const useAuthStore = create<AuthStore>()(
           isAuthenticated: true,
           isLoading: false,
         });
+        
+        // Redirect based on user role
+        if (typeof window !== 'undefined') {
+          if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+            window.location.href = '/admin';
+          } else {
+            window.location.href = '/';
+          }
+        }
       },
 
       logout: () => {
@@ -64,9 +73,36 @@ export const useAuthStore = create<AuthStore>()(
       initialize: () => {
         const token = Cookies.get('auth-token');
         if (token) {
-          set({ token, isAuthenticated: true });
+          try {
+            // Decode JWT token to get user info
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const user = {
+              id: payload.id,
+              email: payload.email,
+              role: payload.role,
+              firstName: payload.firstName || '',
+              lastName: payload.lastName || '',
+            };
+            set({ 
+              token, 
+              user, 
+              isAuthenticated: true,
+              isLoading: false 
+            });
+          } catch (error) {
+            console.error('Error decoding token:', error);
+            // If token is invalid, remove it
+            Cookies.remove('auth-token');
+            set({ 
+              token: null,
+              user: null,
+              isAuthenticated: false,
+              isLoading: false 
+            });
+          }
+        } else {
+          set({ isLoading: false });
         }
-        set({ isLoading: false });
       },
     }),
     {
