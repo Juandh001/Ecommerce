@@ -44,7 +44,7 @@ export const useAuthStore = create<AuthStore>()(
         
         // Redirect based on user role
         if (typeof window !== 'undefined') {
-          if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+          if (user.role === 'ADMIN') {
             window.location.href = '/admin';
           } else {
             window.location.href = '/';

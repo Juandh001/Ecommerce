@@ -111,6 +111,33 @@ export const productsApi = {
   },
 };
 
+export const usersApi = {
+  getUsers: async (filters: any = {}): Promise<any> => {
+    const response = await api.get('/users', { params: filters });
+    return response.data;
+  },
+
+  getUser: async (id: string): Promise<{ user: any }> => {
+    const response = await api.get(`/users/${id}`);
+    return response.data;
+  },
+
+  updateUser: async (id: string, data: any): Promise<{ user: any }> => {
+    const response = await api.put(`/users/${id}`, data);
+    return response.data;
+  },
+
+  deleteUser: async (id: string): Promise<{ message: string }> => {
+    const response = await api.delete(`/users/${id}`);
+    return response.data;
+  },
+
+  toggleUserStatus: async (id: string, isActive: boolean): Promise<{ user: any }> => {
+    const response = await api.put(`/users/${id}`, { isActive });
+    return response.data;
+  },
+};
+
 export const cartApi = {
   getCart: async (): Promise<{ cart: Cart }> => {
     const response = await api.get('/cart');

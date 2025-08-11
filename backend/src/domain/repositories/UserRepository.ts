@@ -13,6 +13,7 @@ export interface UserRepository {
       isActive?: boolean;
       role?: string;
       email?: string;
+      search?: string;
     };
     orderBy?: {
       field: string;

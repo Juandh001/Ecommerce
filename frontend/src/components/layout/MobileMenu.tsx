@@ -1,10 +1,18 @@
 'use client';
 
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import Link from 'next/link';
 import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { User } from '@/types';
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  isActive: boolean;
+}
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -12,6 +20,8 @@ interface MobileMenuProps {
   navigation: { name: string; href: string }[];
   isAuthenticated: boolean;
   user: User | null;
+  categories: Category[];
+  categoriesLoading: boolean;
 }
 
 export function MobileMenu({ 
@@ -19,8 +29,11 @@ export function MobileMenu({
   onClose, 
   navigation, 
   isAuthenticated, 
-  user 
+  user,
+  categories,
+  categoriesLoading
 }: MobileMenuProps) {
+  const [isProductsExpanded, setIsProductsExpanded] = useState(false);
   return (
     <Transition show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -78,6 +91,65 @@ export function MobileMenu({
                             {item.name}
                           </Link>
                         ))}
+                        
+                        {/* Products Section with Categories */}
+                        <div className="space-y-1">
+                          <button
+                            onClick={() => setIsProductsExpanded(!isProductsExpanded)}
+                            className="flex items-center justify-between w-full px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                          >
+                            <span>Products</span>
+                            {isProductsExpanded ? (
+                              <ChevronDownIcon className="h-5 w-5" />
+                            ) : (
+                              <ChevronRightIcon className="h-5 w-5" />
+                            )}
+                          </button>
+                          
+                          {isProductsExpanded && (
+                            <div className="pl-4 space-y-1">
+                              <Link
+                                href="/products"
+                                onClick={onClose}
+                                className="block px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                              >
+                                All Products
+                              </Link>
+                              
+                              <div className="border-t border-gray-200 my-2"></div>
+                              
+                              <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                Categories
+                              </div>
+                              
+                              {categoriesLoading ? (
+                                <div className="space-y-2">
+                                  {[...Array(4)].map((_, i) => (
+                                    <div key={i} className="px-3 py-2">
+                                      <div className="loading-skeleton h-4 w-32"></div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : categories.length === 0 ? (
+                                <div className="px-3 py-2 text-sm text-gray-500">
+                                  No categories available
+                                </div>
+                              ) : (
+                                categories.map((category) => (
+                                  <Link
+                                    key={category.id}
+                                    href={`/products?categoryId=${category.id}`}
+                                    onClick={onClose}
+                                    className="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                  >
+                                    {category.name}
+                                  </Link>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        
                         {!isAuthenticated && (
                           <Link
                             href="/auth/login"

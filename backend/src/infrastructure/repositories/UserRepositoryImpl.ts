@@ -59,6 +59,7 @@ export class UserRepositoryImpl implements UserRepository {
       isActive?: boolean;
       role?: string;
       email?: string;
+      search?: string;
     };
     orderBy?: {
       field: string;
@@ -83,6 +84,14 @@ export class UserRepositoryImpl implements UserRepository {
         contains: options.where.email,
         mode: 'insensitive',
       };
+    }
+
+    if (options?.where?.search) {
+      where.OR = [
+        { firstName: { contains: options.where.search, mode: 'insensitive' } },
+        { lastName: { contains: options.where.search, mode: 'insensitive' } },
+        { email: { contains: options.where.search, mode: 'insensitive' } },
+      ];
     }
 
     const orderBy: any = {};

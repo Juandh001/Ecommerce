@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -9,16 +9,29 @@ import {
   Bars3Icon,
   XMarkIcon,
   UserIcon,
+  ChevronDownIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
+import { categoriesApi } from '@/lib/api';
 import { SearchBar } from './SearchBar';
 import { UserMenu } from './UserMenu';
 import { MobileMenu } from './MobileMenu';
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  isActive: boolean;
+}
+
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isProductsDropdownOpen, setIsProductsDropdownOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
   
   const { isAuthenticated, user } = useAuthStore();
   const { getItemCount, openCart } = useCartStore();
@@ -26,11 +39,27 @@ export function Header() {
 
   const navigation = [
     { name: 'Home', href: '/' },
-    { name: 'Products', href: '/products' },
-    { name: 'Categories', href: '/categories' },
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
   ];
+
+  // Load categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const response = await categoriesApi.getCategories();
+        const activeCategories = response.categories.filter((cat: Category) => cat.isActive);
+        setCategories(activeCategories);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const itemCount = getItemCount();
 
@@ -61,6 +90,72 @@ export function Header() {
                 {item.name}
               </Link>
             ))}
+            
+            {/* Products Dropdown */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setIsProductsDropdownOpen(true)}
+              onMouseLeave={() => setIsProductsDropdownOpen(false)}
+            >
+              <button className="flex items-center text-gray-700 hover:text-primary-600 px-3 py-2 text-sm font-medium transition-colors">
+                Products
+                <ChevronDownIcon className={`ml-1 h-4 w-4 transition-transform ${isProductsDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {/* Dropdown Menu */}
+              {isProductsDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-72 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  <div className="p-2">
+                    {/* All Products Link */}
+                    <Link
+                      href="/products"
+                      className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                    >
+                      <span className="font-medium">All Products</span>
+                    </Link>
+                    
+                    {/* Divider */}
+                    <div className="border-t border-gray-200 my-2"></div>
+                    
+                    {/* Categories */}
+                    <div className="space-y-1">
+                      <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Shop by Category
+                      </div>
+                      
+                      {categoriesLoading ? (
+                        <div className="space-y-2">
+                          {[...Array(4)].map((_, i) => (
+                            <div key={i} className="px-3 py-2">
+                              <div className="loading-skeleton h-4 w-32"></div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : categories.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-gray-500">
+                          No categories available
+                        </div>
+                      ) : (
+                        categories.map((category) => (
+                          <Link
+                            key={category.id}
+                            href={`/products?categoryId=${category.id}`}
+                            className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                          >
+                            <span>{category.name}</span>
+                            {category.description && (
+                              <span className="ml-auto text-xs text-gray-500 truncate max-w-24">
+                                {category.description}
+                              </span>
+                            )}
+                          </Link>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </nav>
 
           {/* Search Bar - Desktop */}
@@ -145,6 +240,8 @@ export function Header() {
         navigation={navigation}
         isAuthenticated={isAuthenticated}
         user={user}
+        categories={categories}
+        categoriesLoading={categoriesLoading}
       />
     </header>
   );
