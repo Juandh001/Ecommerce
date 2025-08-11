@@ -11,21 +11,42 @@ import {
   EyeIcon,
   FunnelIcon
 } from '@heroicons/react/24/outline';
-import { productsApi } from '@/lib/api';
+import { productsApi, categoriesApi } from '@/lib/api';
 import { ProductWithDetails } from '@/types';
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterFeatured, setFilterFeatured] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     fetchProducts();
-  }, [currentPage, searchTerm, filterCategory, filterStatus]);
+  }, [currentPage, searchTerm, filterCategory, filterStatus, filterFeatured]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await categoriesApi.getCategories();
+        setCategories(response.categories);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const fetchProducts = async () => {
     try {
@@ -39,6 +60,8 @@ export default function AdminProductsPage() {
       if (filterCategory) filters.categoryId = filterCategory;
       if (filterStatus === 'active') filters.isActive = true;
       if (filterStatus === 'inactive') filters.isActive = false;
+      if (filterFeatured === 'featured') filters.isFeatured = true;
+      if (filterFeatured === 'not-featured') filters.isFeatured = false;
 
       const response = await productsApi.getProducts(filters);
       setProducts(response.products);
@@ -163,7 +186,7 @@ export default function AdminProductsPage() {
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Search */}
           <div className="relative">
             <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -184,9 +207,11 @@ export default function AdminProductsPage() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Todas las categorías</option>
-              <option value="electronics">Electrónicos</option>
-              <option value="clothing">Ropa</option>
-              <option value="books">Libros</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -203,13 +228,27 @@ export default function AdminProductsPage() {
             </select>
           </div>
 
-          {/* Clear Filters */}
+          {/* Featured Filter */}
           <div>
+            <select
+              value={filterFeatured}
+              onChange={(e) => setFilterFeatured(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Todos los productos</option>
+              <option value="featured">Solo destacados</option>
+              <option value="not-featured">No destacados</option>
+            </select>
+          </div>
+
+          {/* Clear Filters */}
+          <div className="sm:col-span-2 lg:col-span-1">
             <button
               onClick={() => {
                 setSearchTerm('');
                 setFilterCategory('');
                 setFilterStatus('');
+                setFilterFeatured('');
               }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >

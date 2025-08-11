@@ -37,7 +37,7 @@ export class GetProductsUseCase {
       priceRange,
       tags,
       isFeatured,
-      isActive = true,
+      isActive,
       sortBy = 'createdAt',
       sortOrder = 'desc'
     } = input;
@@ -45,9 +45,7 @@ export class GetProductsUseCase {
     const skip = (page - 1) * limit;
     const take = limit;
 
-    const where: any = {
-      isActive,
-    };
+    const where: any = {};
 
     if (categoryId) {
       where.categoryId = categoryId;
@@ -67,6 +65,10 @@ export class GetProductsUseCase {
 
     if (isFeatured !== undefined) {
       where.isFeatured = isFeatured;
+    }
+
+    if (isActive !== undefined) {
+      where.isActive = isActive;
     }
 
     const result = await this.productRepository.findMany({

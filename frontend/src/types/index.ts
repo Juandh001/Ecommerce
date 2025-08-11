@@ -5,7 +5,7 @@ export interface User {
   lastName: string;
   phone?: string;
   dateOfBirth?: string;
-  role: 'CUSTOMER' | 'ADMIN' | 'SUPER_ADMIN';
+  role: 'CUSTOMER' | 'ADMIN';
   isActive: boolean;
   emailVerified: boolean;
   createdAt: string;

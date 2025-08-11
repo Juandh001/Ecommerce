@@ -7,7 +7,7 @@ declare module 'next-auth' {
       id: string;
       email: string;
       name: string;
-      role: 'CUSTOMER' | 'ADMIN' | 'SUPER_ADMIN';
+      role: 'CUSTOMER' | 'ADMIN';
     };
   }
 
@@ -15,7 +15,7 @@ declare module 'next-auth' {
     id: string;
     email: string;
     name: string;
-    role: 'CUSTOMER' | 'ADMIN' | 'SUPER_ADMIN';
+    role: 'CUSTOMER' | 'ADMIN';
     accessToken?: string;
   }
 }
@@ -23,7 +23,7 @@ declare module 'next-auth' {
 declare module 'next-auth/jwt' {
   interface JWT {
     accessToken?: string;
-    role?: 'CUSTOMER' | 'ADMIN' | 'SUPER_ADMIN';
+    role?: 'CUSTOMER' | 'ADMIN';
     userId?: string;
   }
 } 

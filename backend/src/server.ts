@@ -17,6 +17,7 @@ import { LoginUseCase } from './application/use-cases/auth/LoginUseCase';
 import { GetProductsUseCase } from './application/use-cases/products/GetProductsUseCase';
 import { AddToCartUseCase } from './application/use-cases/cart/AddToCartUseCase';
 import { CreateOrderUseCase } from './application/use-cases/orders/CreateOrderUseCase';
+import { GetUsersUseCase } from './application/use-cases/users/GetUsersUseCase';
 
 // PSE imports
 import { PSEService } from './infrastructure/services/PSEService';
@@ -89,6 +90,7 @@ async function bootstrap() {
     const registerUseCase = new RegisterUseCase(userRepository);
     const loginUseCase = new LoginUseCase(userRepository);
     const getProductsUseCase = new GetProductsUseCase(productRepository);
+    const getUsersUseCase = new GetUsersUseCase(userRepository);
     const addToCartUseCase = new AddToCartUseCase(cartRepository, productRepository);
     const createOrderUseCase = new CreateOrderUseCase(orderRepository, cartRepository, productRepository, addressRepository);
 
@@ -294,6 +296,7 @@ async function bootstrap() {
             minPrice: { type: 'number', minimum: 0 },
             maxPrice: { type: 'number', minimum: 0 },
             isFeatured: { type: 'boolean' },
+            isActive: { type: 'boolean' },
             sortBy: { type: 'string', enum: ['name', 'price', 'createdAt', 'popularity'] },
             sortOrder: { type: 'string', enum: ['asc', 'desc'] },
           },
@@ -371,6 +374,7 @@ async function bootstrap() {
           search: query.search,
           priceRange,
           isFeatured: query.isFeatured,
+          isActive: query.isActive,
           sortBy: query.sortBy,
           sortOrder: query.sortOrder,
         });
@@ -430,7 +434,7 @@ async function bootstrap() {
           const token = request.headers.authorization.replace('Bearer ', '');
           const decoded = server.jwt.verify(token) as any;
           
-          if (decoded.role !== 'ADMIN' && decoded.role !== 'SUPER_ADMIN') {
+          if (decoded.role !== 'ADMIN') {
             return reply.code(403).send({ error: 'Admin access required' });
           }
           
@@ -487,7 +491,7 @@ async function bootstrap() {
           const token = request.headers.authorization.replace('Bearer ', '');
           const decoded = server.jwt.verify(token) as any;
           
-          if (decoded.role !== 'ADMIN' && decoded.role !== 'SUPER_ADMIN') {
+          if (decoded.role !== 'ADMIN') {
             return reply.code(403).send({ error: 'Admin access required' });
           }
           
@@ -521,6 +525,251 @@ async function bootstrap() {
         if (error.code === 'P2003') {
           return reply.code(400).send({ 
             error: 'Cannot delete product: it has related records (orders, reviews, etc.)' 
+          });
+        }
+        reply.code(500).send({ error: error.message });
+             }
+     });
+
+        // Categories routes
+    server.get('/api/categories', async (request, reply) => {
+      try {
+        const categories = await prisma.category.findMany({
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            image: true,
+            isActive: true,
+            sortOrder: true,
+          },
+          orderBy: { sortOrder: 'asc' },
+        });
+        
+        console.log('Categories found:', categories);
+        reply.send({ categories });
+      } catch (error: any) {
+        console.error('Error fetching categories:', error);
+        reply.code(500).send({ error: error.message });
+      }
+    });
+
+            // Users routes
+    server.get('/api/users', {
+      preHandler: async (request, reply) => {
+        if (!request.headers.authorization) {
+          return reply.code(401).send({ error: 'Authentication required' });
+        }
+
+        try {
+          const token = request.headers.authorization.replace('Bearer ', '');
+          const decoded = server.jwt.verify(token) as any;
+          
+          if (decoded.role !== 'ADMIN') {
+            return reply.code(403).send({ error: 'Admin access required' });
+          }
+          
+          (request as any).user = decoded;
+        } catch (error) {
+          return reply.code(401).send({ error: 'Invalid token' });
+        }
+      },
+      schema: {
+        querystring: {
+          type: 'object',
+          properties: {
+            page: { type: 'integer', minimum: 1, default: 1 },
+            limit: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+            search: { type: 'string' },
+            role: { type: 'string', enum: ['CUSTOMER', 'ADMIN'] },
+            isActive: { type: 'boolean' },
+            sortBy: { type: 'string', enum: ['email', 'firstName', 'lastName', 'createdAt'] },
+            sortOrder: { type: 'string', enum: ['asc', 'desc'] },
+          },
+        },
+      },
+    }, async (request, reply) => {
+      try {
+        const query = request.query as any;
+
+        const result = await getUsersUseCase.execute({
+          page: query.page,
+          limit: query.limit,
+          search: query.search,
+          role: query.role,
+          isActive: query.isActive,
+          sortBy: query.sortBy,
+          sortOrder: query.sortOrder,
+        });
+
+        // Remove passwords from response
+        const sanitizedUsers = result.users.map(({ password, ...user }) => user);
+        
+        reply.send({
+          ...result,
+          users: sanitizedUsers,
+        });
+      } catch (error: any) {
+        reply.code(500).send({ error: error.message });
+      }
+    });
+
+    server.get('/api/users/:id', {
+      preHandler: async (request, reply) => {
+        if (!request.headers.authorization) {
+          return reply.code(401).send({ error: 'Authentication required' });
+        }
+
+        try {
+          const token = request.headers.authorization.replace('Bearer ', '');
+          const decoded = server.jwt.verify(token) as any;
+          
+          if (decoded.role !== 'ADMIN') {
+            return reply.code(403).send({ error: 'Admin access required' });
+          }
+          
+          (request as any).user = decoded;
+        } catch (error) {
+          return reply.code(401).send({ error: 'Invalid token' });
+        }
+      },
+      schema: {
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' }
+          },
+          required: ['id']
+        }
+      }
+    }, async (request, reply) => {
+      try {
+        const { id } = request.params as { id: string };
+        const user = await userRepository.findById(id);
+        
+        if (!user) {
+          return reply.code(404).send({ error: 'User not found' });
+        }
+
+        // Remove password from response
+        const { password, ...userWithoutPassword } = user;
+        reply.send({ user: userWithoutPassword });
+      } catch (error: any) {
+        reply.code(500).send({ error: error.message });
+      }
+    });
+
+    server.put('/api/users/:id', {
+      preHandler: async (request, reply) => {
+        if (!request.headers.authorization) {
+          return reply.code(401).send({ error: 'Authentication required' });
+        }
+
+        try {
+          const token = request.headers.authorization.replace('Bearer ', '');
+          const decoded = server.jwt.verify(token) as any;
+          
+          if (decoded.role !== 'ADMIN') {
+            return reply.code(403).send({ error: 'Admin access required' });
+          }
+          
+          (request as any).user = decoded;
+        } catch (error) {
+          return reply.code(401).send({ error: 'Invalid token' });
+        }
+      },
+      schema: {
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' }
+          },
+          required: ['id']
+        },
+        body: {
+          type: 'object',
+          properties: {
+            firstName: { type: 'string' },
+            lastName: { type: 'string' },
+            phone: { type: 'string' },
+            role: { type: 'string', enum: ['CUSTOMER', 'ADMIN'] },
+            isActive: { type: 'boolean' },
+            emailVerified: { type: 'boolean' },
+          }
+        }
+      }
+    }, async (request, reply) => {
+      try {
+        const { id } = request.params as { id: string };
+        const updateData = request.body as any;
+        
+        const existingUser = await userRepository.findById(id);
+        if (!existingUser) {
+          return reply.code(404).send({ error: 'User not found' });
+        }
+
+        const updatedUser = await userRepository.update(id, updateData);
+        
+        // Remove password from response
+        const { password, ...userWithoutPassword } = updatedUser;
+        reply.send({ user: userWithoutPassword });
+      } catch (error: any) {
+        reply.code(500).send({ error: error.message });
+      }
+    });
+
+    server.delete('/api/users/:id', {
+      preHandler: async (request, reply) => {
+        if (!request.headers.authorization) {
+          return reply.code(401).send({ error: 'Authentication required' });
+        }
+
+        try {
+          const token = request.headers.authorization.replace('Bearer ', '');
+          const decoded = server.jwt.verify(token) as any;
+          
+          if (decoded.role !== 'ADMIN') {
+            return reply.code(403).send({ error: 'Admin access required' });
+          }
+          
+          const { id } = request.params as { id: string };
+          
+          // Prevent users from deleting themselves
+          if (decoded.userId === id) {
+            return reply.code(400).send({ error: 'Cannot delete your own account' });
+          }
+          
+          (request as any).user = decoded;
+        } catch (error) {
+          return reply.code(401).send({ error: 'Invalid token' });
+        }
+      },
+      schema: {
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' }
+          },
+          required: ['id']
+        }
+      }
+    }, async (request, reply) => {
+      try {
+        const { id } = request.params as { id: string };
+        
+        const existingUser = await userRepository.findById(id);
+        if (!existingUser) {
+          return reply.code(404).send({ error: 'User not found' });
+        }
+
+        await userRepository.delete(id);
+        reply.send({ message: 'User deleted successfully' });
+      } catch (error: any) {
+        console.error('Error deleting user:', error);
+        if (error.code === 'P2003') {
+          return reply.code(400).send({ 
+            error: 'Cannot delete user: they have related records (orders, reviews, etc.)' 
           });
         }
         reply.code(500).send({ error: error.message });

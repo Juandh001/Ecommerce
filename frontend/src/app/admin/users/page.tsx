@@ -11,6 +11,7 @@ import {
   ShieldCheckIcon,
   ShieldExclamationIcon
 } from '@heroicons/react/24/outline';
+import { usersApi } from '@/lib/api';
 
 interface User {
   id: string;
@@ -18,7 +19,7 @@ interface User {
   firstName: string;
   lastName: string;
   phone?: string;
-  role: 'CUSTOMER' | 'ADMIN' | 'SUPER_ADMIN';
+  role: 'CUSTOMER' | 'ADMIN';
   isActive: boolean;
   emailVerified: boolean;
   createdAt: string;
@@ -43,126 +44,75 @@ export default function AdminUsersPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      const filters: any = {
+        page: currentPage,
+        limit: 10,
+      };
+
+      if (searchTerm) filters.search = searchTerm;
+      if (filterRole) filters.role = filterRole;
+      if (filterStatus === 'active') filters.isActive = true;
+      if (filterStatus === 'inactive') filters.isActive = false;
+
+      const response = await usersApi.getUsers(filters);
       
-      // TODO: Replace with real API call
-      setTimeout(() => {
-        const mockUsers: User[] = [
-          {
-            id: '1',
-            email: 'admin@ecommerce.com',
-            firstName: 'Admin',
-            lastName: 'User',
-            role: 'ADMIN',
-            isActive: true,
-            emailVerified: true,
-            createdAt: '2024-01-01',
-            ordersCount: 0,
-            totalSpent: 0,
-          },
-          {
-            id: '2',
-            email: 'customer@example.com',
-            firstName: 'John',
-            lastName: 'Doe',
-            phone: '+1234567890',
-            role: 'CUSTOMER',
-            isActive: true,
-            emailVerified: true,
-            createdAt: '2024-01-05',
-            lastLogin: '2024-01-10',
-            ordersCount: 5,
-            totalSpent: 1299.95,
-          },
-          {
-            id: '3',
-            email: 'jane.smith@example.com',
-            firstName: 'Jane',
-            lastName: 'Smith',
-            role: 'CUSTOMER',
-            isActive: true,
-            emailVerified: false,
-            createdAt: '2024-01-08',
-            ordersCount: 2,
-            totalSpent: 459.98,
-          },
-          {
-            id: '4',
-            email: 'inactive@example.com',
-            firstName: 'Inactive',
-            lastName: 'User',
-            role: 'CUSTOMER',
-            isActive: false,
-            emailVerified: true,
-            createdAt: '2024-01-03',
-            ordersCount: 0,
-            totalSpent: 0,
-          },
-        ];
+      // Map users to include orders count and total spent (initially 0)
+      const usersWithStats = response.users.map((user: any) => ({
+        ...user,
+        ordersCount: 0, // TODO: Implement orders count
+        totalSpent: 0,  // TODO: Implement total spent calculation
+        createdAt: new Date(user.createdAt).toISOString().split('T')[0],
+      }));
 
-        // Apply filters
-        let filteredUsers = mockUsers;
-        
-        if (searchTerm) {
-          filteredUsers = filteredUsers.filter(user => 
-            user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchTerm.toLowerCase())
-          );
-        }
-        
-        if (filterRole) {
-          filteredUsers = filteredUsers.filter(user => user.role === filterRole);
-        }
-        
-        if (filterStatus === 'active') {
-          filteredUsers = filteredUsers.filter(user => user.isActive);
-        } else if (filterStatus === 'inactive') {
-          filteredUsers = filteredUsers.filter(user => !user.isActive);
-        }
-
-        setUsers(filteredUsers);
-        setTotalPages(Math.ceil(filteredUsers.length / 10));
-        setLoading(false);
-      }, 1000);
+      setUsers(usersWithStats);
+      setTotalPages(response.totalPages);
     } catch (error) {
       console.error('Error fetching users:', error);
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`¿Estás seguro de que quieres eliminar al usuario "${userName}"?\n\nEsta acción no se puede deshacer.`)) {
       return;
     }
 
     try {
-      // TODO: Implement delete API
-      console.log('Deleting user:', userId);
+      await usersApi.deleteUser(userId);
+      alert('Usuario eliminado correctamente');
       fetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting user:', error);
+      const errorMessage = error.response?.data?.error || 'Error al eliminar el usuario';
+      alert(errorMessage);
     }
   };
 
   const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
     try {
-      // TODO: Implement status toggle API
-      console.log('Toggling user status:', userId, !currentStatus);
-      fetchUsers();
-    } catch (error) {
+      // Update the local state immediately for better UX
+      setUsers(prev => prev.map(user => 
+        user.id === userId 
+          ? { ...user, isActive: !currentStatus }
+          : user
+      ));
+      
+      await usersApi.toggleUserStatus(userId, !currentStatus);
+    } catch (error: any) {
       console.error('Error toggling user status:', error);
+      // Revert the local state change if the API call fails
+      setUsers(prev => prev.map(user => 
+        user.id === userId 
+          ? { ...user, isActive: currentStatus }
+          : user
+      ));
+      alert('Error al cambiar el estado del usuario');
     }
   };
 
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case 'SUPER_ADMIN':
-        return (
-          <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
-            <ShieldCheckIcon className="h-3 w-3 mr-1" />
-            Super Admin
-          </span>
-        );
       case 'ADMIN':
         return (
           <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
@@ -206,6 +156,35 @@ export default function AdminUsersPage() {
     );
   };
 
+  // Toggle Switch Component
+  const ToggleSwitch = ({ checked, onChange, disabled = false }: { 
+    checked: boolean; 
+    onChange: () => void; 
+    disabled?: boolean;
+  }) => (
+    <button
+      type="button"
+      onClick={onChange}
+      disabled={disabled}
+      className={`
+        relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+        ${checked 
+          ? 'bg-green-600' 
+          : 'bg-gray-200'
+        }
+        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+      `}
+      title={checked ? 'Desactivar usuario' : 'Activar usuario'}
+    >
+      <span
+        className={`
+          inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-200 ease-in-out
+          ${checked ? 'translate-x-5' : 'translate-x-1'}
+        `}
+      />
+    </button>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -248,7 +227,6 @@ export default function AdminUsersPage() {
               <option value="">Todos los roles</option>
               <option value="CUSTOMER">Clientes</option>
               <option value="ADMIN">Administradores</option>
-              <option value="SUPER_ADMIN">Super Administradores</option>
             </select>
           </div>
 
@@ -344,7 +322,13 @@ export default function AdminUsersPage() {
                         {getRoleBadge(user.role)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(user.isActive)}
+                        <div className="flex items-center space-x-3">
+                          {getStatusBadge(user.isActive)}
+                          <ToggleSwitch
+                            checked={user.isActive}
+                            onChange={() => toggleUserStatus(user.id, user.isActive)}
+                          />
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {user.ordersCount}
@@ -370,14 +354,7 @@ export default function AdminUsersPage() {
                             <PencilIcon className="h-4 w-4" />
                           </Link>
                           <button
-                            onClick={() => toggleUserStatus(user.id, user.isActive)}
-                            className={`p-1 rounded ${user.isActive ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900'}`}
-                            title={user.isActive ? 'Desactivar' : 'Activar'}
-                          >
-                            {user.isActive ? '⏸' : '▶'}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(user.id)}
+                            onClick={() => handleDeleteUser(user.id, `${user.firstName} ${user.lastName}`)}
                             className="text-red-600 hover:text-red-900 p-1 rounded"
                             title="Eliminar"
                           >
