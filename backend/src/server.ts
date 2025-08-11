@@ -474,6 +474,56 @@ async function bootstrap() {
         reply.send({ product: updatedProduct });
       } catch (error: any) {
         reply.code(500).send({ error: error.message });
+             }
+     });
+
+    server.delete('/api/products/:id', {
+      preHandler: async (request, reply) => {
+        if (!request.headers.authorization) {
+          return reply.code(401).send({ error: 'Authentication required' });
+        }
+
+        try {
+          const token = request.headers.authorization.replace('Bearer ', '');
+          const decoded = server.jwt.verify(token) as any;
+          
+          if (decoded.role !== 'ADMIN' && decoded.role !== 'SUPER_ADMIN') {
+            return reply.code(403).send({ error: 'Admin access required' });
+          }
+          
+          (request as any).user = decoded;
+        } catch (error) {
+          return reply.code(401).send({ error: 'Invalid token' });
+        }
+      },
+      schema: {
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' }
+          },
+          required: ['id']
+        }
+      }
+    }, async (request, reply) => {
+      try {
+        const { id } = request.params as { id: string };
+        
+        const existingProduct = await productRepository.findById(id);
+        if (!existingProduct) {
+          return reply.code(404).send({ error: 'Product not found' });
+        }
+
+        await productRepository.delete(id);
+        reply.send({ message: 'Product deleted successfully' });
+      } catch (error: any) {
+        console.error('Error deleting product:', error);
+        if (error.code === 'P2003') {
+          return reply.code(400).send({ 
+            error: 'Cannot delete product: it has related records (orders, reviews, etc.)' 
+          });
+        }
+        reply.code(500).send({ error: error.message });
       }
     });
 

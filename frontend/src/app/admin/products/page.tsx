@@ -50,18 +50,19 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleDeleteProduct = async (productId: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este producto?')) {
+  const handleDeleteProduct = async (productId: string, productName: string) => {
+    if (!confirm(`¿Estás seguro de que quieres eliminar el producto "${productName}"?\n\nEsta acción no se puede deshacer.`)) {
       return;
     }
 
     try {
-      // TODO: Implement delete API
-      console.log('Deleting product:', productId);
-      // await deleteProduct(productId);
-      fetchProducts();
-    } catch (error) {
+      await productsApi.deleteProduct(productId);
+      alert('Producto eliminado correctamente');
+      fetchProducts(); // Refresh the list
+    } catch (error: any) {
       console.error('Error deleting product:', error);
+      const errorMessage = error.response?.data?.error || 'Error al eliminar el producto';
+      alert(errorMessage);
     }
   };
 
@@ -318,7 +319,7 @@ export default function AdminProductsPage() {
                             <PencilIcon className="h-4 w-4" />
                           </Link>
                           <button
-                            onClick={() => handleDeleteProduct(product.id)}
+                            onClick={() => handleDeleteProduct(product.id, product.name)}
                             className="text-red-600 hover:text-red-900 p-1 rounded"
                             title="Eliminar"
                           >
