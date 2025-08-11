@@ -1,4 +1,17 @@
-import { Order, CreateOrderData, OrderWithDetails, OrderStatus } from '../entities/Order';
+import { Order, CreateOrderData, OrderWithDetails, OrderStatus, Payment, PaymentStatus } from '../entities/Order';
+
+export interface CreatePaymentData {
+  orderId: string;
+  amount: number;
+  currency: string;
+  method: any;
+  status: PaymentStatus;
+  psePaymentId?: string;
+  pseRedirectUrl?: string;
+  pseBankCode?: string;
+  stripePaymentId?: string;
+  gatewayResponse?: any;
+}
 
 export interface OrderRepository {
   findById(id: string): Promise<Order | null>;
@@ -6,6 +19,13 @@ export interface OrderRepository {
   findWithDetails(id: string): Promise<OrderWithDetails | null>;
   create(data: CreateOrderData): Promise<Order>;
   updateStatus(id: string, status: OrderStatus): Promise<Order>;
+  
+  // Métodos para pagos
+  createPayment(data: CreatePaymentData): Promise<Payment>;
+  findPaymentByPseId(psePaymentId: string): Promise<Payment | null>;
+  updatePaymentStatus(paymentId: string, status: PaymentStatus, updateData?: any): Promise<Payment>;
+  updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order>;
+  
   findByUser(userId: string, options?: {
     skip?: number;
     take?: number;

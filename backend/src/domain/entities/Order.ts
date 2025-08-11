@@ -20,6 +20,7 @@ export enum PaymentMethod {
   DEBIT_CARD = 'DEBIT_CARD',
   PAYPAL = 'PAYPAL',
   STRIPE = 'STRIPE',
+  PSE = 'PSE',
   CASH_ON_DELIVERY = 'CASH_ON_DELIVERY'
 }
 
@@ -62,6 +63,9 @@ export interface Payment {
   status: PaymentStatus;
   transactionId?: string;
   stripePaymentId?: string;
+  psePaymentId?: string;
+  pseRedirectUrl?: string;
+  pseBankCode?: string;
   gatewayResponse?: any;
   createdAt: Date;
   updatedAt: Date;
