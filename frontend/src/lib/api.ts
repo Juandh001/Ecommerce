@@ -104,6 +104,11 @@ export const productsApi = {
     const response = await api.put(`/products/${id}`, data);
     return response.data;
   },
+
+  deleteProduct: async (id: string): Promise<{ message: string }> => {
+    const response = await api.delete(`/products/${id}`);
+    return response.data;
+  },
 };
 
 export const cartApi = {
