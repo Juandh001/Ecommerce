@@ -313,6 +313,9 @@ async function bootstrap() {
                     price: { type: 'number' },
                     comparePrice: { type: 'number' },
                     shortDescription: { type: 'string' },
+                    isActive: { type: 'boolean' },
+                    isFeatured: { type: 'boolean' },
+                    sku: { type: 'string' },
                     images: {
                       type: 'array',
                       items: {
@@ -329,6 +332,15 @@ async function bootstrap() {
                         id: { type: 'string' },
                         name: { type: 'string' },
                         slug: { type: 'string' },
+                      },
+                    },
+                    inventory: {
+                      type: 'object',
+                      properties: {
+                        quantity: { type: 'integer' },
+                        lowStockThreshold: { type: 'integer' },
+                        trackQuantity: { type: 'boolean' },
+                        allowBackorder: { type: 'boolean' },
                       },
                     },
                     averageRating: { type: 'number' },
@@ -403,6 +415,63 @@ async function bootstrap() {
         }
 
         reply.send({ product });
+      } catch (error: any) {
+        reply.code(500).send({ error: error.message });
+      }
+    });
+
+    server.put('/api/products/:id', {
+      preHandler: async (request, reply) => {
+        if (!request.headers.authorization) {
+          return reply.code(401).send({ error: 'Authentication required' });
+        }
+
+        try {
+          const token = request.headers.authorization.replace('Bearer ', '');
+          const decoded = server.jwt.verify(token) as any;
+          
+          if (decoded.role !== 'ADMIN' && decoded.role !== 'SUPER_ADMIN') {
+            return reply.code(403).send({ error: 'Admin access required' });
+          }
+          
+          (request as any).user = decoded;
+        } catch (error) {
+          return reply.code(401).send({ error: 'Invalid token' });
+        }
+      },
+      schema: {
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' }
+          },
+          required: ['id']
+        },
+        body: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            description: { type: 'string' },
+            shortDescription: { type: 'string' },
+            price: { type: 'number' },
+            comparePrice: { type: 'number' },
+            isActive: { type: 'boolean' },
+            isFeatured: { type: 'boolean' }
+          }
+        }
+      }
+    }, async (request, reply) => {
+      try {
+        const { id } = request.params as { id: string };
+        const updateData = request.body as any;
+        
+        const existingProduct = await productRepository.findById(id);
+        if (!existingProduct) {
+          return reply.code(404).send({ error: 'Product not found' });
+        }
+
+        const updatedProduct = await productRepository.update(id, updateData);
+        reply.send({ product: updatedProduct });
       } catch (error: any) {
         reply.code(500).send({ error: error.message });
       }

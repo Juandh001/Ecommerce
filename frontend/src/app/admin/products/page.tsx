@@ -65,6 +65,29 @@ export default function AdminProductsPage() {
     }
   };
 
+  const handleToggleFeatured = async (productId: string, currentStatus: boolean) => {
+    try {
+      // Update the local state immediately for better UX
+      setProducts(prev => prev.map(product => 
+        product.id === productId 
+          ? { ...product, isFeatured: !currentStatus }
+          : product
+      ));
+      
+      // Call the API to update the product
+      await productsApi.updateProduct(productId, { isFeatured: !currentStatus });
+    } catch (error) {
+      console.error('Error updating featured status:', error);
+      // Revert the local state change if the API call fails
+      setProducts(prev => prev.map(product => 
+        product.id === productId 
+          ? { ...product, isFeatured: currentStatus }
+          : product
+      ));
+      alert('Error al actualizar el estado destacado del producto');
+    }
+  };
+
   const getStatusBadge = (isActive: boolean) => {
     return isActive ? (
       <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
@@ -86,6 +109,39 @@ export default function AdminProductsPage() {
       return <span className="text-green-600 font-medium">En stock</span>;
     }
   };
+
+  // Toggle Switch Component
+  const ToggleSwitch = ({ checked, onChange, disabled = false }: { 
+    checked: boolean; 
+    onChange: () => void; 
+    disabled?: boolean;
+  }) => (
+    <div className="flex items-center">
+      <button
+        type="button"
+        onClick={onChange}
+        disabled={disabled}
+        className={`
+          relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+          ${checked 
+            ? 'bg-blue-600' 
+            : 'bg-gray-200'
+          }
+          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+        `}
+      >
+        <span
+          className={`
+            inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out
+            ${checked ? 'translate-x-6' : 'translate-x-1'}
+          `}
+        />
+      </button>
+      <span className={`ml-3 text-sm font-medium ${checked ? 'text-blue-600' : 'text-gray-500'}`}>
+        {checked ? 'Destacado' : 'Normal'}
+      </span>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -191,6 +247,9 @@ export default function AdminProductsPage() {
                       Estado
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Destacado
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Acciones
                     </th>
                   </tr>
@@ -235,6 +294,12 @@ export default function AdminProductsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(product.isActive)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <ToggleSwitch
+                          checked={product.isFeatured}
+                          onChange={() => handleToggleFeatured(product.id, product.isFeatured)}
+                        />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">

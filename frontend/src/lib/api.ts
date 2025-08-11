@@ -99,6 +99,11 @@ export const productsApi = {
     });
     return response.data;
   },
+
+  updateProduct: async (id: string, data: Partial<ProductWithDetails>): Promise<{ product: ProductWithDetails }> => {
+    const response = await api.put(`/products/${id}`, data);
+    return response.data;
+  },
 };
 
 export const cartApi = {
