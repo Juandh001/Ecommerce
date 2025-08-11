@@ -156,7 +156,7 @@ export function MobileMenu({
                             onClick={onClose}
                             className="block px-3 py-2 text-base font-medium text-primary-600 hover:bg-gray-50"
                           >
-                            Sign In
+                            Iniciar Sesión
                           </Link>
                         )}
                       </nav>

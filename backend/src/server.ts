@@ -110,8 +110,15 @@ async function bootstrap() {
       if (request.headers.authorization) {
         try {
           const token = request.headers.authorization.replace('Bearer ', '');
-          const decoded = server.jwt.verify(token);
-          request.user = decoded;
+          const decoded = server.jwt.verify(token) as any;
+          
+          // Verify user still exists in database
+          if (decoded.id) {
+            const user = await userRepository.findById(decoded.id);
+            if (user && user.isActive) {
+              request.user = decoded;
+            }
+          }
         } catch (err) {
           // Token is invalid, but we don't throw here - let individual routes handle auth
         }
@@ -793,6 +800,10 @@ async function bootstrap() {
 
         reply.send({ cart });
       } catch (error: any) {
+        console.error('Error getting cart:', error);
+        if (error.message === 'User not found') {
+          return reply.code(404).send({ error: 'User not found. Please log in again.' });
+        }
         reply.code(500).send({ error: error.message });
       }
     });
@@ -814,6 +825,13 @@ async function bootstrap() {
 
         reply.send(cart);
       } catch (error: any) {
+        console.error('Error adding to cart:', error);
+        if (error.message === 'User not found') {
+          return reply.code(404).send({ error: 'User not found. Please log in again.' });
+        }
+        if (error.message === 'Product not found') {
+          return reply.code(404).send({ error: 'Product not found' });
+        }
         reply.code(500).send({ error: error.message });
       }
     });

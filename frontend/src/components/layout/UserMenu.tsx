@@ -18,10 +18,10 @@ export function UserMenu({ user }: UserMenuProps) {
 
   return (
     <Menu as="div" className="relative">
-      <Menu.Button className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-colors">
+      <Menu.Button className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 transition-colors">
         <UserIcon className="w-6 h-6" />
-        <span className="hidden sm:block text-sm font-medium">
-          {user.firstName}
+        <span className="text-sm font-medium truncate max-w-32">
+          {user.firstName} {user.lastName}
         </span>
       </Menu.Button>
 
@@ -44,7 +44,7 @@ export function UserMenu({ user }: UserMenuProps) {
                 } flex items-center px-4 py-2 text-sm text-gray-700`}
               >
                 <UserIcon className="mr-3 h-4 w-4" />
-                My Account
+                Mi Cuenta
               </Link>
             )}
           </Menu.Item>
@@ -57,7 +57,7 @@ export function UserMenu({ user }: UserMenuProps) {
                 } flex items-center px-4 py-2 text-sm text-gray-700`}
               >
                 <Cog6ToothIcon className="mr-3 h-4 w-4" />
-                Orders
+                Mis Pedidos
               </Link>
             )}
           </Menu.Item>
@@ -70,7 +70,7 @@ export function UserMenu({ user }: UserMenuProps) {
                 } flex w-full items-center px-4 py-2 text-sm text-gray-700`}
               >
                 <ArrowRightOnRectangleIcon className="mr-3 h-4 w-4" />
-                Sign out
+                Cerrar Sesión
               </button>
             )}
           </Menu.Item>

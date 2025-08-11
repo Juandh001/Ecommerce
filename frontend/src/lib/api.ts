@@ -34,6 +34,18 @@ api.interceptors.response.use(
   (error) => {
     const message = error.response?.data?.error || 'An error occurred';
     
+    // Handle user not found errors (stale JWT token)
+    if (error.response?.status === 404 && 
+        (message === 'User not found. Please log in again.' || message === 'User not found')) {
+      if (typeof window !== 'undefined') {
+        const { useAuthStore } = require('@/store/authStore');
+        useAuthStore.getState().clearAuthOnUserNotFound();
+        toast.error('Sesión expirada. Por favor inicia sesión nuevamente.');
+        window.location.href = '/auth/login';
+      }
+      return Promise.reject(error);
+    }
+    
     // Handle authentication errors appropriately
     if (error.response?.status === 401) {
       // Only redirect to login on specific auth failures, not all 401s

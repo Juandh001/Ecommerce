@@ -4,10 +4,20 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { productsApi } from '@/lib/api';
-import { ProductWithDetails } from '@/types';
+
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  images: string[];
+  slug: string;
+  isFeatured: boolean;
+  isActive: boolean;
+}
 
 export function FeaturedProducts() {
-  const [products, setProducts] = useState<ProductWithDetails[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,8 +26,15 @@ export function FeaturedProducts() {
       try {
         setLoading(true);
         setError(null);
-        const response = await productsApi.getFeaturedProducts();
-        setProducts(response.products);
+        
+        // Fetch featured products
+        const response = await productsApi.getProducts({ 
+          isFeatured: true, 
+          isActive: true, 
+          limit: 4 
+        });
+        
+        setProducts(response.products || []);
       } catch (err) {
         console.error('Error fetching featured products:', err);
         setError('Error al cargar los productos destacados');
@@ -29,7 +46,40 @@ export function FeaturedProducts() {
     fetchFeaturedProducts();
   }, []);
 
-  const formatPrice = (price: number) => {
+  const getDefaultProductImage = (productName: string): string => {
+    // Usar imágenes que coincidan mejor con el tipo de producto urbano
+    const name = productName.toLowerCase();
+    
+    if (name.includes('zapatillas') || name.includes('flow') || name.includes('shoes')) {
+      return 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=400&fit=crop&q=80';
+    }
+    if (name.includes('camiseta') || name.includes('vibes') || name.includes('shirt')) {
+      return 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop&q=80';
+    }
+    if (name.includes('gorra') || name.includes('cap') || name.includes('colombia')) {
+      return 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400&h=400&fit=crop&q=80';
+    }
+    if (name.includes('mochila') || name.includes('pack') || name.includes('bag')) {
+      return 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop&q=80';
+    }
+    if (name.includes('urban') || name.includes('street')) {
+      return 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&q=80';
+    }
+    if (name.includes('iphone') || name.includes('phone')) {
+      return 'https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=400&h=400&fit=crop&q=80';
+    }
+    if (name.includes('samsung') || name.includes('galaxy')) {
+      return 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400&h=400&fit=crop&q=80';
+    }
+    if (name.includes('macbook') || name.includes('laptop')) {
+      return 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=400&fit=crop&q=80';
+    }
+    
+    // Fallback para productos generales urbanos
+    return 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&q=80';
+  };
+
+  const formatPrice = (price: number): string => {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
       currency: 'COP',
@@ -42,10 +92,10 @@ export function FeaturedProducts() {
       <div className="container-custom">
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-            Featured Products
+            Lo Más Bacano
           </h2>
           <p className="mt-4 text-lg text-gray-600">
-            Check out our most popular items
+            Échale un ojo a nuestros productos más chimbas
           </p>
         </div>
         
@@ -62,12 +112,6 @@ export function FeaturedProducts() {
           ) : error ? (
             <div className="col-span-full text-center py-8">
               <p className="text-red-600">{error}</p>
-              <button 
-                onClick={() => window.location.reload()} 
-                className="mt-4 btn-primary"
-              >
-                Intentar de nuevo
-              </button>
             </div>
           ) : products.length === 0 ? (
             <div className="col-span-full text-center py-8">
@@ -75,59 +119,45 @@ export function FeaturedProducts() {
             </div>
           ) : (
             products.map((product) => (
-              <Link 
-                key={product.id} 
+              <Link
+                key={product.id}
                 href={`/products/${product.slug}`}
-                className="card group hover:shadow-lg transition-shadow duration-300"
+                className="card group hover:shadow-lg transition-all duration-300"
               >
-                <div className="relative h-48 mb-4 overflow-hidden rounded-lg bg-gray-100">
-                  {product.images && product.images.length > 0 ? (
-                    <Image
-                      src={product.images[0].url}
-                      alt={product.images[0].altText || product.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                      <span className="text-gray-400 text-sm">Sin imagen</span>
-                    </div>
-                  )}
-                  {product.comparePrice && product.comparePrice > product.price && (
-                    <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-medium">
-                      Oferta
-                    </div>
-                  )}
+                <div className="aspect-square overflow-hidden rounded-lg mb-4 bg-gray-100">
+                  <Image
+                    src={product.images?.[0]?.url || product.images?.[0] || getDefaultProductImage(product.name)}
+                    alt={product.name}
+                    width={400}
+                    height={400}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = getDefaultProductImage(product.name);
+                    }}
+                  />
                 </div>
                 
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                  <h3 className="font-semibold text-gray-900 group-hover:text-gray-700 transition-colors">
                     {product.name}
                   </h3>
                   
-                  {product.shortDescription && (
+                  {product.description && (
                     <p className="text-sm text-gray-600 line-clamp-2">
-                      {product.shortDescription}
+                      {product.description}
                     </p>
                   )}
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between">
                     <span className="text-lg font-bold text-gray-900">
                       {formatPrice(product.price)}
                     </span>
-                    {product.comparePrice && product.comparePrice > product.price && (
-                      <span className="text-sm text-gray-500 line-through">
-                        {formatPrice(product.comparePrice)}
-                      </span>
-                    )}
+                    
+                    <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                      ⭐ Destacado
+                    </span>
                   </div>
-                  
-                  {product.inventory && product.inventory.quantity <= 5 && (
-                    <p className="text-xs text-orange-600 font-medium">
-                      ¡Solo quedan {product.inventory.quantity}!
-                    </p>
-                  )}
                 </div>
               </Link>
             ))
@@ -136,11 +166,11 @@ export function FeaturedProducts() {
         
         {products.length > 0 && (
           <div className="text-center mt-12">
-            <Link 
-              href="/products" 
-              className="btn-primary inline-flex items-center"
+            <Link
+              href="/products?isFeatured=true"
+              className="inline-flex items-center px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
             >
-              Ver todos los productos
+              Ver todos los destacados
               <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>

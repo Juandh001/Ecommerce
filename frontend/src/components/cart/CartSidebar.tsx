@@ -8,7 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 export function CartSidebar() {
-  const { cart, isOpen, closeCart, updateItem, removeItem, getItemCount, getSubtotal } = useCartStore();
+  const { cart, isOpen, closeCart, updateItem, removeItem, clearCart, getItemCount, getSubtotal } = useCartStore();
 
   const itemCount = getItemCount();
   const subtotal = getSubtotal();
@@ -18,6 +18,12 @@ export function CartSidebar() {
       removeItem(productId);
     } else {
       updateItem(productId, newQuantity);
+    }
+  };
+
+  const handleClearCart = () => {
+    if (window.confirm('¿Estás seguro de que quieres limpiar todo el carrito?')) {
+      clearCart();
     }
   };
 
@@ -170,6 +176,12 @@ export function CartSidebar() {
                           >
                             Finalizar compra
                           </Link>
+                          <button
+                            onClick={handleClearCart}
+                            className="w-full px-4 py-2 border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 hover:border-red-400 rounded-lg transition-colors text-sm font-medium"
+                          >
+                            Limpiar carrito
+                          </button>
                           <button
                             onClick={closeCart}
                             className="btn-outline w-full"
