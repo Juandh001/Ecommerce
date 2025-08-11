@@ -35,6 +35,7 @@ enum PaymentMethod {
   DEBIT_CARD
   PAYPAL
   STRIPE
+  PSE
   CASH_ON_DELIVERY
 }
 
@@ -279,6 +280,9 @@ model Payment {
   status          PaymentStatus @default(PENDING)
   transactionId   String?
   stripePaymentId String?
+  psePaymentId    String?
+  pseRedirectUrl  String?
+  pseBankCode     String?
   gatewayResponse Json?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt

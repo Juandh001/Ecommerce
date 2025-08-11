@@ -9,11 +9,21 @@ import { prisma } from './infrastructure/database/prisma';
 import { UserRepositoryImpl } from './infrastructure/repositories/UserRepositoryImpl';
 import { ProductRepositoryImpl } from './infrastructure/repositories/ProductRepositoryImpl';
 import { CartRepositoryImpl } from './infrastructure/repositories/CartRepositoryImpl';
+import { OrderRepositoryImpl } from './infrastructure/repositories/OrderRepositoryImpl';
+import { AddressRepositoryImpl } from './infrastructure/repositories/AddressRepositoryImpl';
 
 import { RegisterUseCase } from './application/use-cases/auth/RegisterUseCase';
 import { LoginUseCase } from './application/use-cases/auth/LoginUseCase';
 import { GetProductsUseCase } from './application/use-cases/products/GetProductsUseCase';
 import { AddToCartUseCase } from './application/use-cases/cart/AddToCartUseCase';
+import { CreateOrderUseCase } from './application/use-cases/orders/CreateOrderUseCase';
+
+// PSE imports
+import { PSEService } from './infrastructure/services/PSEService';
+import { GetPSEBanksUseCase } from './application/use-cases/payments/GetPSEBanksUseCase';
+import { CreatePSEPaymentUseCase } from './application/use-cases/payments/CreatePSEPaymentUseCase';
+import { ProcessPSEWebhookUseCase } from './application/use-cases/payments/ProcessPSEWebhookUseCase';
+import { PaymentController } from './infrastructure/controllers/PaymentController';
 
 const server = Fastify({
   logger: {
@@ -67,11 +77,27 @@ async function bootstrap() {
     const userRepository = new UserRepositoryImpl(prisma);
     const productRepository = new ProductRepositoryImpl(prisma);
     const cartRepository = new CartRepositoryImpl(prisma);
+    const orderRepository = new OrderRepositoryImpl(prisma);
+    const addressRepository = new AddressRepositoryImpl(prisma);
+
+    // PSE Service and Use Cases
+    const pseService = new PSEService();
+    const getPSEBanksUseCase = new GetPSEBanksUseCase(pseService);
+    const createPSEPaymentUseCase = new CreatePSEPaymentUseCase(orderRepository, userRepository, pseService);
+    const processPSEWebhookUseCase = new ProcessPSEWebhookUseCase(orderRepository, pseService);
 
     const registerUseCase = new RegisterUseCase(userRepository);
     const loginUseCase = new LoginUseCase(userRepository);
     const getProductsUseCase = new GetProductsUseCase(productRepository);
     const addToCartUseCase = new AddToCartUseCase(cartRepository, productRepository);
+    const createOrderUseCase = new CreateOrderUseCase(orderRepository, cartRepository, productRepository, addressRepository);
+
+    // Controllers
+    const paymentController = new PaymentController(
+      getPSEBanksUseCase,
+      createPSEPaymentUseCase,
+      processPSEWebhookUseCase
+    );
 
     // Check if decorator already exists to avoid hot reload issues
     if (!server.hasRequestDecorator('user')) {
@@ -473,6 +499,82 @@ async function bootstrap() {
         reply.code(500).send({ error: error.message });
       }
     });
+
+    // PSE Routes
+    server.get('/api/pse/banks', {
+      schema: {
+        tags: ['PSE'],
+        description: 'Get list of PSE banks',
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    code: { type: 'string' },
+                    name: { type: 'string' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }, paymentController.getPSEBanks.bind(paymentController));
+
+    server.post('/api/pse/payment', {
+      schema: {
+        tags: ['PSE'],
+        description: 'Create PSE payment',
+        security: [{ Bearer: [] }],
+        body: {
+          type: 'object',
+          required: ['orderId', 'bankCode', 'customerDocument', 'documentType', 'customerPhone'],
+          properties: {
+            orderId: { type: 'string' },
+            bankCode: { type: 'string' },
+            customerDocument: { type: 'string' },
+            documentType: { type: 'string' },
+            customerPhone: { type: 'string' }
+          }
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: {
+                type: 'object',
+                properties: {
+                  paymentId: { type: 'string' },
+                  redirectUrl: { type: 'string' },
+                  pseHash: { type: 'string' }
+                }
+              }
+            }
+          }
+        }
+      }
+    }, paymentController.createPSEPayment.bind(paymentController));
+
+    server.post('/api/pse/webhook', {
+      schema: {
+        tags: ['PSE'],
+        description: 'PSE webhook endpoint',
+        body: {
+          type: 'object',
+          properties: {
+            hash: { type: 'string' },
+            operation: { type: 'string' },
+            notification_type: { type: 'string' }
+          }
+        }
+      }
+    }, paymentController.processPSEWebhook.bind(paymentController));
 
     server.get('/api/health', async (request, reply) => {
       reply.send({ 

@@ -167,12 +167,14 @@ export type PaymentStatus =
   | 'FAILED'
   | 'REFUNDED';
 
-export type PaymentMethod = 
-  | 'CREDIT_CARD'
-  | 'DEBIT_CARD'
-  | 'PAYPAL'
-  | 'STRIPE'
-  | 'CASH_ON_DELIVERY';
+export enum PaymentMethod {
+  CREDIT_CARD = 'CREDIT_CARD',
+  DEBIT_CARD = 'DEBIT_CARD',
+  PAYPAL = 'PAYPAL',
+  STRIPE = 'STRIPE',
+  PSE = 'PSE',
+  CASH_ON_DELIVERY = 'CASH_ON_DELIVERY'
+}
 
 export interface Order {
   id: string;
@@ -219,6 +221,9 @@ export interface Payment {
   status: PaymentStatus;
   transactionId?: string;
   stripePaymentId?: string;
+  psePaymentId?: string;
+  pseRedirectUrl?: string;
+  pseBankCode?: string;
   gatewayResponse?: any;
   createdAt: string;
   updatedAt: string;
