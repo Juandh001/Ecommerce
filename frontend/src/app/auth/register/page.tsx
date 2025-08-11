@@ -69,19 +69,19 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <div className="mx-auto h-12 w-12 bg-primary-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-xl">E</span>
+          <div className="mx-auto h-12 w-12 bg-gray-800 rounded flex items-center justify-center">
+            <span className="text-white font-bold text-xl">U</span>
           </div>
           <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
-            Crea tu cuenta
+            Únete a la comunidad urbana
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            ¿Ya tienes cuenta?{' '}
+            ¿Ya eres parte del flow?{' '}
             <Link
               href="/auth/login"
-              className="font-medium text-primary-600 hover:text-primary-500"
+              className="font-medium text-gray-800 hover:text-gray-700"
             >
-              Inicia sesión aquí
+              Entra acá, hermano
             </Link>
           </p>
         </div>
@@ -190,11 +190,11 @@ export default function RegisterPage() {
               name="terms"
               type="checkbox"
               required
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              className="h-4 w-4 text-gray-800 focus:ring-gray-500 border-gray-300 rounded"
             />
             <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
               Acepto los{' '}
-              <a href="#" className="text-primary-600 hover:text-primary-500">
+              <a href="#" className="text-gray-800 hover:text-gray-700">
                 términos y condiciones
               </a>
             </label>

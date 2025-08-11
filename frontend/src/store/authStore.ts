@@ -16,6 +16,7 @@ interface AuthActions {
   setUser: (user: User) => void;
   setLoading: (loading: boolean) => void;
   initialize: () => void;
+  clearAuthOnUserNotFound: () => void;
 }
 
 type AuthStore = AuthState & AuthActions;
@@ -60,6 +61,11 @@ export const useAuthStore = create<AuthStore>()(
           isAuthenticated: false,
           isLoading: false,
         });
+        
+        // Redirect to home after logout
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        }
       },
 
       setUser: (user: User) => {
@@ -103,6 +109,16 @@ export const useAuthStore = create<AuthStore>()(
         } else {
           set({ isLoading: false });
         }
+      },
+      clearAuthOnUserNotFound: () => {
+        Cookies.remove('auth-token');
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
+        // Don't redirect, just clear the auth state
       },
     }),
     {

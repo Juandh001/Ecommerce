@@ -61,10 +61,10 @@ export function CategoryShowcase() {
       <div className="container-custom">
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-            Shop by Category
+            Explora por Categoría
           </h2>
           <p className="mt-4 text-lg text-gray-600">
-            Find exactly what you're looking for
+            Encuentra justo lo que buscas para tu flow urbano
           </p>
         </div>
         
@@ -130,7 +130,7 @@ export function CategoryShowcase() {
               href="/products"
               className="inline-flex items-center px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
             >
-              Ver todos los productos
+              Ver todo el flow urbano
               <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>

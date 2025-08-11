@@ -31,6 +31,15 @@ export class CartRepositoryImpl implements CartRepository {
   }
 
   async create(userId: string): Promise<Cart> {
+    // Verify user exists before creating cart
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
     const cart = await this.prisma.cart.create({
       data: { userId },
     });
@@ -39,6 +48,15 @@ export class CartRepositoryImpl implements CartRepository {
   }
 
   async addItem(userId: string, data: AddToCartData): Promise<CartWithItems> {
+    // Verify user exists first
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
     let cart = await this.prisma.cart.findUnique({
       where: { userId },
     });

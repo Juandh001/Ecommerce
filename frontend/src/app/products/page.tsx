@@ -1,24 +1,49 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { productsApi } from '@/lib/api';
+import { productsApi, categoriesApi } from '@/lib/api';
 import { ProductWithDetails } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export default function ProductsPage() {
+  const searchParams = useSearchParams();
+  const categoryId = searchParams.get('categoryId');
+  
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
+  const [currentCategory, setCurrentCategory] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await productsApi.getProducts();
-        setProducts(response.products);
+        
+        // Fetch products with category filter if present
+        const filters: any = {};
+        if (categoryId) {
+          filters.categoryId = categoryId;
+        }
+        
+        const [productsResponse, categoryResponse] = await Promise.all([
+          productsApi.getProducts(filters),
+          categoryId ? categoriesApi.getCategories() : Promise.resolve({ categories: [] })
+        ]);
+        
+        setProducts(productsResponse.products);
+        
+        // Set current category info if filtering
+        if (categoryId && categoryResponse.categories) {
+          const category = categoryResponse.categories.find((cat: any) => cat.id === categoryId);
+          setCurrentCategory(category);
+        } else {
+          setCurrentCategory(null);
+        }
+        
       } catch (err) {
         setError('Error al cargar los productos');
         console.error('Error fetching products:', err);
@@ -27,8 +52,8 @@ export default function ProductsPage() {
       }
     };
 
-    fetchProducts();
-  }, []);
+    fetchData();
+  }, [categoryId]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-ES', {
@@ -45,11 +70,24 @@ export default function ProductsPage() {
         <div className="container-custom section-padding">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Todos los Productos
+              {currentCategory ? `${currentCategory.name}` : 'Todos los Productos'}
             </h1>
             <p className="text-lg text-gray-600">
-              Descubre nuestra amplia selección de productos
+              {currentCategory 
+                ? currentCategory.description || `Productos de la categoría ${currentCategory.name}`
+                : 'Descubre nuestra amplia selección de productos'
+              }
             </p>
+            {currentCategory && (
+              <div className="mt-4">
+                <Link 
+                  href="/products"
+                  className="inline-flex items-center text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  ← Ver todos los productos
+                </Link>
+              </div>
+            )}
           </div>
 
           {error && (
@@ -99,14 +137,14 @@ export default function ProductsPage() {
                     )}
                   </div>
                   <div className="space-y-2">
-                    <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                    <h3 className="font-semibold text-gray-900 group-hover:text-gray-700 transition-colors">
                       {product.name}
                     </h3>
                     <p className="text-gray-600 text-sm line-clamp-2">
                       {product.shortDescription || product.description}
                     </p>
                     <div className="flex items-center justify-between">
-                      <span className="text-lg font-bold text-blue-600">
+                      <span className="text-lg font-bold text-gray-900">
                         {formatPrice(Number(product.price))}
                       </span>
                       {product.comparePrice && Number(product.comparePrice) > Number(product.price) && (

@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
+import { WhatsAppFloat } from '@/components/common/WhatsAppFloat';
+import { AIChatBot } from '@/components/common/AIChatBot';
 import { CartSidebar } from '@/components/cart/CartSidebar';
 
 const inter = Inter({ 
@@ -10,23 +12,23 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Modern Ecommerce - Shop the Latest Products',
-  description: 'Discover amazing products at great prices. Fast shipping, secure checkout, and excellent customer service.',
-  keywords: 'ecommerce, shopping, products, online store, electronics, clothing',
-  authors: [{ name: 'Modern Ecommerce' }],
+  title: 'UrbanLane - Street Style Colombia',
+  description: 'El street style más bacano de Colombia. Encuentra tu flow urbano con productos de calidad.',
+  keywords: 'street style, urban, colombia, ropa urbana, accesorios, style callejero, bogota',
+  authors: [{ name: 'UrbanLane Colombia' }],
   openGraph: {
-    title: 'Modern Ecommerce - Shop the Latest Products',
-    description: 'Discover amazing products at great prices. Fast shipping and secure checkout.',
+    title: 'UrbanLane - Street Style Colombia',
+    description: 'El street style más bacano de Colombia. Encuentra tu flow urbano.',
     type: 'website',
-    locale: 'en_US',
+    locale: 'es_CO',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Modern Ecommerce',
-    description: 'Shop the latest products online',
+    title: 'UrbanLane Colombia',
+    description: 'El street style más bacano de Colombia',
   },
   robots: 'index, follow',
-  metadataBase: new URL('https://ecommerce.example.com'),
+  metadataBase: new URL('https://urbanlane.com.co'),
 };
 
 export default function RootLayout({
@@ -35,17 +37,28 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="es-CO" className={inter.variable}>
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="theme-color" content="#0ea5e9" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
-      <body className="min-h-screen bg-gray-50 font-sans antialiased">
+      <body className="min-h-screen bg-gray-100 font-sans antialiased">
         <Providers>
           {children}
           <CartSidebar />
+          <WhatsAppFloat 
+            phoneNumber="573001234567" // Cambia este número por el tuyo
+            message="¡Ey, qué tal! Me interesa conocer más sobre los productos de UrbanLane. ¿Me pueden colaborar con info del street style que manejan?"
+            position="bottom-right"
+            showAfterSeconds={4}
+          />
+          <AIChatBot 
+            position="bottom-right"
+            showAfterSeconds={6}
+            botName="UrbanBot"
+          />
         </Providers>
       </body>
     </html>

@@ -71,7 +71,7 @@ export default function CheckoutPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow-sm">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">Checkout</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Finalizar Compra</h1>
             
             {/* Progress indicator */}
             <div className="mt-4 flex items-center space-x-4">

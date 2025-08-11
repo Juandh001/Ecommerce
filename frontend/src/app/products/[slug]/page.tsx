@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProductWithDetails } from '@/types';
@@ -216,7 +217,7 @@ export default function ProductDetailPage() {
               {/* Price */}
               <div className="space-y-2">
                 <div className="flex items-center space-x-3">
-                  <span className="text-3xl font-bold text-blue-600">
+                  <span className="text-3xl font-bold text-gray-900">
                     {formatPrice(Number(product.price))}
                   </span>
                   {product.comparePrice && Number(product.comparePrice) > Number(product.price) && (
@@ -287,9 +288,9 @@ export default function ProductDetailPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Categoría:</span>
-                    <a href={`/categories/${product.category.slug}`} className="text-blue-600 hover:underline">
+                    <Link href={`/products?categoryId=${product.category.id}`} className="text-gray-700 hover:text-gray-900 hover:underline">
                       {product.category.name}
-                    </a>
+                    </Link>
                   </div>
                   {product.weight && (
                     <div className="flex justify-between">

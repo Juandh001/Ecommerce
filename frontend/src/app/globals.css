@@ -3,6 +3,60 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom animations for the hero slider */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out 0.2s both;
+}
+
+/* WhatsApp Float Animations */
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) translateY(50px);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05) translateY(-10px);
+  }
+  70% {
+    transform: scale(0.9) translateY(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0px);
+  }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.5s ease-out;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;

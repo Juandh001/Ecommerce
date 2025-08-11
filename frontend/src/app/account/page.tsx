@@ -1,7 +1,33 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { useAuthStore } from '@/store/authStore';
 
 export default function AccountPage() {
+  const router = useRouter();
+  const { isAuthenticated, isLoading, user } = useAuthStore();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/');
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  // Show loading or redirect
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return null; // This will show briefly before redirect
+  }
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -51,7 +77,7 @@ export default function AccountPage() {
                         <input
                           type="text"
                           className="input mt-1"
-                          defaultValue="Juan"
+                          defaultValue={user.firstName}
                         />
                       </div>
                       <div>
@@ -61,7 +87,7 @@ export default function AccountPage() {
                         <input
                           type="text"
                           className="input mt-1"
-                          defaultValue="Pérez"
+                          defaultValue={user.lastName}
                         />
                       </div>
                     </div>
@@ -73,7 +99,7 @@ export default function AccountPage() {
                       <input
                         type="email"
                         className="input mt-1"
-                        defaultValue="juan@example.com"
+                        defaultValue={user.email}
                       />
                     </div>
                     
